@@ -155,73 +155,163 @@ def compute_kl_loss(logits, soft_targets, temperature):
     return kl_loss
 
 
-def train(args, all_loader, model, optimizer, temperature, epoch): 
-    model.train()
-    train_loss =0 
-    correct = 0
-    total = 0 
-    pseudo_correct =0    
+# def train(args, all_loader, model, optimizer, temperature, epoch): 
+#     model.train()
+#     train_loss =0 
+#     correct = 0
+#     total = 0 
+#     pseudo_correct =0    
 
-    num_iters=300
-    for k in  range(num_iters):
-        data_target_list=[]
-        total_loss = 0
-        #获取批次数据
-        for i_target in range(len(args.target_names)):
-            temp_data = next(all_loader[i_target])
-            # print(temp_data[0].size(0))
+#     num_iters=300
+#     for k in  range(num_iters):
+#         data_target_list=[]
+#         total_loss = 0
+#         batch_size = args.batch_size  # 设定 batch size
+#         # data_target_list = []
 
-            if temp_data[0].size(0) == 1:  # 假设 data[0] 是输入
-                temp_data = next(all_loader[i_target])
-            #每个域获取一个批次数据
-            data_target_list.append(temp_data)#按tgt_dataset_list的顺序调用不同域的数据集loader
-        # 对于每个域的批次数据
-        for i in range(len(args.target_names)):
-            # domain_id = i
-            data_i, targets, pseudo_lbl, domains, _ = data_target_list[i]
-            # if targets.size(0) != args.batch_size:
-            #     continue
-            if use_cuda:
-                data_i, targets, pseudo_lbl = data_i.cuda(), targets.cuda(), pseudo_lbl.cuda()   
+#         # for i_target in range(len(args.target_names)):
+#         #     temp_list = []  # 用于存储筛选出的数据
 
-            model.backbone.update_id(i, i)
-            model.backbone._enable_update()#更新mean std
-            target_out_list = model(data_i, [i]) # 记录了这个域的batchsize的mean和std，获得
-            # model.backbone.visualize_feature_map(save_dir='feature_maps', file_name=f'x_{i}_feature_map.png')
-            target_out = target_out_list[0]
-            try:
-                probs = F.softmax(pseudo_lbl, dim=1)
-                # 获取每个样本最大概率的索引作为标签
-                pseudo_lbl_argmax = torch.argmax(probs, dim=1)
-                ce_loss = criterion(target_out, pseudo_lbl_argmax)
-                total_loss += ce_loss
-            except:
-                print(target_out.shape)
-                print(pseudo_lbl.shape)
-            
-            #style transfer
-            # print(range(len(args.target_names)))
-            for ii in range(len(args.target_names)):
-                if ii == i:
-                    continue
-                transfered_domain = ii
+#         #     while len(temp_list) < batch_size:
+#         #         temp_data = next(all_loader[i_target])  # 取 batch
+#         #         inputs, targets, pseudo_lbl, domains, idx = temp_data  # 解包数据
 
-                model.backbone._enable_cross_norm()
-                model.backbone.update_id(i, transfered_domain)
+#         #         # 计算最大置信度
+#         #         if pseudo_lbl.min() < 0 or pseudo_lbl.max() > 1:
+#         #             pseudo_confidence = torch.softmax(pseudo_lbl, dim=-1).max(dim=-1).values
+#         #         else:
+#         #             pseudo_confidence = pseudo_lbl.max(dim=-1).values
 
-                target_out_transfer_list = model(data_i.clone(), [transfered_domain])
+#         #         # 过滤高置信度数据
+#         #         if epoch==0 or epoch==1:
+#         #             threshold = 0.6  # 可以调整
+#         #         elif epoch==2 or epoch==3:
+#         #             threshold = 0.6  # 可以调整
+#         #         elif epoch==4 or epoch==5:
+#         #             threshold = 0.7  # 可以调整
 
-                model.backbone._disable_cross_norm()
-                target_out_transfer = target_out_transfer_list[0]
-                del target_out_transfer_list  # 删除未使用的变量
-                torch.cuda.empty_cache()
+#         #         high_conf_mask = pseudo_confidence > threshold
+#         #         selected_inputs = inputs[high_conf_mask]
+#         #         selected_targets = targets[high_conf_mask]
+#         #         selected_pseudo_lbl = pseudo_lbl[high_conf_mask]
+#         #         selected_domains = domains[high_conf_mask]
+#         #         selected_idx = idx[high_conf_mask]
 
-                probs = F.softmax(pseudo_lbl, dim=1)
-                # 获取每个样本最大概率的索引作为标签
-                pseudo_lbl_argmax = torch.argmax(probs, dim=1)
-                loss_CTS_transfered = criterion(target_out_transfer, pseudo_lbl_argmax)
+#         #         # 添加到 temp_list
+#         #         for i in range(selected_inputs.size(0)):
+#         #             temp_list.append((
+#         #                 selected_inputs[i].unsqueeze(0),
+#         #                 selected_targets[i].unsqueeze(0),
+#         #                 selected_pseudo_lbl[i].unsqueeze(0),
+#         #                 selected_domains[i].unsqueeze(0),
+#         #                 selected_idx[i].unsqueeze(0)
+#         #             ))
                 
-                def get_adaptive_weight(epoch, loss, initial_weight=2, min_weight=0.4, total_epochs=20):
+#         #         # 避免死循环，如果数据太少，直接跳出
+#         #         if len(temp_list) > 0 and len(temp_list) < batch_size:
+#         #             continue
+
+#         #     # 如果最终数据足够一个 batch，则拼接
+#         #     if len(temp_list) >= batch_size:
+#         #         batch = [torch.cat(x, dim=0) for x in zip(*temp_list[:batch_size])]
+#         #         data_target_list.append(batch)
+
+#         #获取批次数据
+#         for i_target in range(len(args.target_names)):
+#             temp_data = next(all_loader[i_target])
+#             # print(temp_data[0].size(0))
+
+#             if temp_data[0].size(0) == 1:  # 假设 data[0] 是输入
+#                 temp_data = next(all_loader[i_target])
+#             #每个域获取一个批次数据
+#             data_target_list.append(temp_data)#按tgt_dataset_list的顺序调用不同域的数据集loader
+#             # print(data_target_list[0])
+#         # 对于每个域的批次数据
+#         for i in range(len(args.target_names)):
+#             # domain_id = i
+#             data_i, targets, pseudo_lbl, domains, _ = data_target_list[i]
+#             # if targets.size(0) != args.batch_size:
+#             #     continue
+#             if use_cuda:
+#                 data_i, targets, pseudo_lbl = data_i.cuda(), targets.cuda(), pseudo_lbl.cuda()   
+#             # print(data_i.shape)# torch.Size([4, 3, 224, 224])
+#             # print("*****")
+#             # print(targets.shape)# torch.Size([4])
+#             model.backbone.update_id(i, i)
+#             model.backbone._enable_update()#更新mean std
+#             target_out_list = model(data_i, [i]) # 记录了这个域的batchsize的mean和std，获得
+#             # model.backbone.visualize_feature_map(save_dir='feature_maps', file_name=f'x_{i}_feature_map.png')
+#             target_out = target_out_list[0]
+#             try:
+#                 probs = F.softmax(pseudo_lbl, dim=1)
+#                 # 获取每个样本最大概率的索引作为标签
+#                 pseudo_lbl_argmax = torch.argmax(probs, dim=1)
+#                 ce_loss = criterion(target_out, pseudo_lbl_argmax)
+#                 total_loss += ce_loss
+#             except:
+#                 print(target_out.shape)
+#                 print(pseudo_lbl.shape)
+            
+#             #style transfer
+#             # print(range(len(args.target_names)))
+#             for ii in range(len(args.target_names)):
+#                 if ii == i:
+#                     continue
+#                 transfered_domain = ii
+
+#                 model.backbone._enable_cross_norm()
+#                 model.backbone.update_id(i, transfered_domain)
+
+#                 target_out_transfer_list = model(data_i.clone(), [transfered_domain])
+
+#                 model.backbone._disable_cross_norm()
+#                 target_out_transfer = target_out_transfer_list[0]
+#                 del target_out_transfer_list  # 删除未使用的变量
+#                 torch.cuda.empty_cache()
+
+#                 probs = F.softmax(pseudo_lbl, dim=1)
+#                 # 获取每个样本最大概率的索引作为标签
+#                 pseudo_lbl_argmax = torch.argmax(probs, dim=1)
+#                 loss_CTS_transfered = criterion(target_out_transfer, pseudo_lbl_argmax)
+                
+#                 def get_adaptive_weight(epoch, loss, initial_weight=2, min_weight=0.4, total_epochs=20):
+#                     """
+#                     基于 epoch 动态调整权重，线性衰减。
+                    
+#                     参数:
+#                     - epoch (int): 当前的训练轮数。
+#                     - loss (torch.Tensor): 当前的损失值，用于计算动态权重时备用。
+#                     - initial_weight (float): 初始权重值，默认为 0.8。
+#                     - min_weight (float): 最低权重值，默认为 0.2。
+#                     - total_epochs (int): 总的训练轮数。
+                    
+#                     返回:
+#                     - weight (float): 自适应权重。
+#                     """
+#                     decay_rate = (initial_weight - min_weight) / total_epochs
+#                     return max(initial_weight - epoch * decay_rate, min_weight)
+#                 adaptive_weight = get_adaptive_weight(epoch, loss_CTS_transfered)
+#                 total_loss += adaptive_weight*loss_CTS_transfered #主要loss
+   
+#             _, predicted = torch.max(target_out.data, 1)
+#             total += targets.size(0)
+#             correct += predicted.eq(targets.data).cpu().sum().float()
+#             pseudo_correct += predicted.eq(pseudo_lbl_argmax.data).cpu().sum().float()
+#         train_loss += total_loss.item()
+         
+#         with torch.autograd.set_detect_anomaly(True):
+#             (total_loss).backward() 
+#         optimizer.step()
+#         optimizer.zero_grad()
+#         progress_bar(k, num_iters,
+#                     'Loss: %.3f | Acc: %.3f%% (%d/%d) | Pseudo Acc: %.3f%%'
+#                     % (total_loss/(k+1), 100.*correct/total, correct, total, 100.*pseudo_correct/total))
+
+#     return (total_loss/num_iters,  100.*correct/total) #平均loss        
+
+import torch.nn.functional as F
+
+def get_adaptive_weight(epoch, loss, initial_weight=2, min_weight=0.4, total_epochs=20):
                     """
                     基于 epoch 动态调整权重，线性衰减。
                     
@@ -237,24 +327,141 @@ def train(args, all_loader, model, optimizer, temperature, epoch):
                     """
                     decay_rate = (initial_weight - min_weight) / total_epochs
                     return max(initial_weight - epoch * decay_rate, min_weight)
+
+def train(args, all_loader, model, optimizer, temperature, epoch): 
+    model.train()
+    train_loss = 0 
+    correct = 0
+    total = 0 
+    pseudo_correct = 0    
+
+    num_iters = 300
+    for k in range(num_iters):
+        data_target_list = []
+        total_loss = 0
+        batch_size = args.batch_size  # 设定 batch size
+
+        #  batch_size = args.batch_size  # 设定 batch size
+        data_target_list = []
+
+        for i_target in range(len(args.target_names)):
+            temp_list = []  # 用于存储筛选出的数据
+
+            while len(temp_list) < batch_size:
+                temp_data = next(all_loader[i_target])  # 取 batch
+                inputs, targets, pseudo_lbl, domains, idx = temp_data  # 解包数据
+
+                # 计算最大置信度
+                if pseudo_lbl.min() < 0 or pseudo_lbl.max() > 1:
+                    pseudo_confidence = torch.softmax(pseudo_lbl, dim=-1).max(dim=-1).values
+                else:
+                    pseudo_confidence = pseudo_lbl.max(dim=-1).values
+
+                # 过滤高置信度数据
+                if epoch==0 or epoch==1:
+                    threshold = 0  # 可以调整
+                elif epoch==2 or epoch==3:
+                    threshold = 0.6  # 可以调整
+                elif epoch==4 or epoch==5:
+                    threshold = 0.7  # 可以调整
+
+                high_conf_mask = pseudo_confidence > threshold
+                selected_inputs = inputs[high_conf_mask]
+                selected_targets = targets[high_conf_mask]
+                selected_pseudo_lbl = pseudo_lbl[high_conf_mask]
+                selected_domains = domains[high_conf_mask]
+                selected_idx = idx[high_conf_mask]
+
+                # 添加到 temp_list
+                for i in range(selected_inputs.size(0)):
+                    temp_list.append((
+                        selected_inputs[i].unsqueeze(0),
+                        selected_targets[i].unsqueeze(0),
+                        selected_pseudo_lbl[i].unsqueeze(0),
+                        selected_domains[i].unsqueeze(0),
+                        selected_idx[i].unsqueeze(0)
+                    ))
+                
+                # 避免死循环，如果数据太少，直接跳出
+                if len(temp_list) > 0 and len(temp_list) < batch_size:
+                    continue
+
+            # 如果最终数据足够一个 batch，则拼接
+            if len(temp_list) >= batch_size:
+                batch = [torch.cat(x, dim=0) for x in zip(*temp_list[:batch_size])]
+                data_target_list.append(batch)
+
+        # 获取批次数据
+        # for i_target in range(len(args.target_names)):
+        #     temp_data = next(all_loader[i_target])
+
+        #     if temp_data[0].size(0) == 1:  # 假设 data[0] 是输入
+        #         temp_data = next(all_loader[i_target])
+        #     data_target_list.append(temp_data)  # 按tgt_dataset_list的顺序调用不同域的数据集loader
+
+        # 对于每个域的批次数据
+        for i in range(len(args.target_names)):
+            data_i, targets, pseudo_lbl, domains, _ = data_target_list[i]
+
+            if use_cuda:
+                data_i, targets, pseudo_lbl = data_i.cuda(), targets.cuda(), pseudo_lbl.cuda()   
+
+            model.backbone.update_id(i, i)
+            model.backbone._enable_update()  # 更新mean std
+            target_out_list = model(data_i, [i])  # 获取输出
+            target_out = target_out_list[0]
+
+            # 计算伪标签的置信度
+            probs = F.softmax(pseudo_lbl, dim=1)
+            pseudo_confidence = probs.max(dim=1).values  # 每个样本的最大概率作为置信度
+
+            # 根据置信度调整损失权重
+            weight = pseudo_confidence  # 使用置信度作为权重
+            weight = weight / weight.max()  # 归一化，使得权重在[0, 1]之间
+
+            # 计算交叉熵损失
+            pseudo_lbl_argmax = torch.argmax(probs, dim=1)
+            ce_loss = criterion(target_out, pseudo_lbl_argmax)
+
+            # 加权损失
+            total_loss += (ce_loss * weight).sum()  # 每个样本的损失按置信度加权
+
+            # style transfer部分
+            for ii in range(len(args.target_names)):
+                if ii == i:
+                    continue
+                transfered_domain = ii
+                model.backbone._enable_cross_norm()
+                model.backbone.update_id(i, transfered_domain)
+                target_out_transfer_list = model(data_i.clone(), [transfered_domain])
+                model.backbone._disable_cross_norm()
+                target_out_transfer = target_out_transfer_list[0]
+                del target_out_transfer_list
+                torch.cuda.empty_cache()
+
+                loss_CTS_transfered = criterion(target_out_transfer, pseudo_lbl_argmax)
                 adaptive_weight = get_adaptive_weight(epoch, loss_CTS_transfered)
-                total_loss += adaptive_weight*loss_CTS_transfered #主要loss
-   
+                total_loss += adaptive_weight * loss_CTS_transfered  # 主要loss
+
             _, predicted = torch.max(target_out.data, 1)
             total += targets.size(0)
             correct += predicted.eq(targets.data).cpu().sum().float()
             pseudo_correct += predicted.eq(pseudo_lbl_argmax.data).cpu().sum().float()
+
         train_loss += total_loss.item()
-         
+
+        # 反向传播与优化
         with torch.autograd.set_detect_anomaly(True):
-            (total_loss).backward() 
+            total_loss.backward()
         optimizer.step()
         optimizer.zero_grad()
-        progress_bar(k, num_iters,
-                    'Loss: %.3f | Acc: %.3f%% (%d/%d) | Pseudo Acc: %.3f%%'
-                    % (total_loss/(k+1), 100.*correct/total, correct, total, 100.*pseudo_correct/total))
 
-    return (total_loss/num_iters,  100.*correct/total) #平均loss        
+        progress_bar(k, num_iters, 
+                     'Loss: %.3f | Acc: %.3f%% (%d/%d) | Pseudo Acc: %.3f%%' % 
+                     (total_loss/(k+1), 100.*correct/total, correct, total, 100.*pseudo_correct/total))
+
+    return (total_loss/num_iters,  100.*correct/total)  # 平均loss
+
 
 def test(epoch, testloader, model):
     global best_acc
@@ -333,7 +540,7 @@ def test(epoch, testloader, model):
             early_stop=0
             best_test_loss = avg_test_loss
             flag_bst=True
-            torch.save(model.state_dict(), f'./MTDA_weights/Stage2_step2_{args.dset}_{epoch}.pt')
+            torch.save(model.state_dict(), f'./MTDA_weights/Stage2_step2_{args.dset}_{epoch}_nosimilar.pt')
             print(f'Saving best model with loss: {best_test_loss:.2f}')
         else:
             early_stop=early_stop+1
@@ -372,7 +579,7 @@ def pseudo_lbl_update(testloader, model, opt, epoch, device=torch.device("cuda:0
         csv_data = pd.read_csv(csv_file,header=None)
         for i in list(all_idx.numpy()):
             # try:
-                if filter_single_logit_by_confidence(logits_np[i],epoch)==None:
+                if filter_single_logit_by_confidence(logits_np[i],epoch) is None:
                     continue
                 else:           
                     csv_data.iloc[i, 3]=logits_str[i]
@@ -381,11 +588,12 @@ def pseudo_lbl_update(testloader, model, opt, epoch, device=torch.device("cuda:0
             #     print(csv_data.index)
             #     print(len(csv_data))
             #     print(len(logits_str))
-
+        
         args.csv_filename = f'temp_pl_{str(epoch)}.csv'
         csv_path=f'{args.txt_folder}/{args.dset}/{args.csv_filename}'
         csv_data.to_csv(csv_path, mode = 'w', header=False, index=False)
         all_loader, all_dset = data_load(args)
+        # args.csv_filename = 'guangzhou_source.csv' 
 
         
     return all_loader
@@ -428,7 +636,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', default=4, type=int, help='batch size')
     parser.add_argument('--epoch', default=4, type=int, help='total epochs to run')
     parser.add_argument('--interval', default=1, type=int)
-    parser.add_argument('--csv_filename', default='guangzhou_source.csv', type=str, choices=['guangzhou_comp.csv', 'wuhan.csv', 'wuhan_comp.csv','changsha.csv','guangzhou_source.csv']) # class
+    parser.add_argument('--csv_filename', default='guangzhou_source_nosimilar.csv', type=str, choices=['guangzhou_comp.csv', 'wuhan.csv', 'wuhan_comp.csv','changsha.csv','guangzhou_source.csv','guangzhou_source_nosimilar.csv']) # class
     parser.add_argument('--txt_folder', default='csv_pseudo_labels', type=str)
     parser.add_argument('--dset', type=str, default='city_wise_png_jilin', choices=['city_wise_png', 'city_wise_png_jilin'])
     parser.add_argument("--ratio", default=1, type=float)
@@ -469,7 +677,13 @@ if __name__ == '__main__':
     all_loader, all_dset = data_load(args)  
     
     model = MultiHeadResNet50(args,num_heads=num_heads)
-    checkpoint = torch.load('./MTDA_weights/Stage2_step1_city_wise_png_jilin_12.pt')  # 加载 .pt wuhan class
+    # checkpoint = torch.load('./MTDA_weights/Stage2_step1_city_wise_png_jilin_12.pt')  #
+    # checkpoint = torch.load('./MTDA_weights/Stage2_step1_city_wise_png_jilin_14.pt')  #
+
+    # checkpoint = torch.load('./MTDA_weights/Stage2_step1_city_wise_png_jilin_13_nosimilar.pt')  
+    checkpoint = torch.load('./MTDA_weights/Stage2_step1_city_wise_png_jilin_12_nosimilar.pt')  
+
+
 
     model.load_state_dict(checkpoint)  # 将权重加载到模型中
     if use_cuda:
@@ -480,7 +694,7 @@ if __name__ == '__main__':
     param_group = []
     # 对每个部分的参数进行分类，设置不同的学习率
     for k, v in model.backbone.named_parameters():  # 假设 backbone 是 netF
-        param_group += [{'params': v, 'lr': args.lr * 0.4}]  # netF 的学习率设置为 args.lr * 0.1
+        param_group += [{'params': v, 'lr': args.lr * 0.45 }]  # netF 的学习率设置为 args.lr * 0.1
     
     head_iter = 0
     for head in model.heads:

@@ -19,6 +19,7 @@ np.random.seed(4)
 # os.environ["OMP_NUM_THREADS"] = "1"  # OpenMP
 # os.environ["MKL_NUM_THREADS"] = "1"  # MKL
 
+
 def test(testloader, model):
     # global best_acc
     # global best_test_loss
@@ -333,7 +334,7 @@ if __name__ == '__main__':
     # parser.add_argument('--csv_filename', default='guangzhou_comp.csv', type=str) # class
     # parser.add_argument('--csv_filename', default='guangzhou.csv', type=str) # no class
 
-    parser.add_argument('--csv_filename', default='guangzhou_source.csv', type=str)# # class
+    parser.add_argument('--csv_filename', default='guangzhou_source_nosimilar.csv', type=str)# # class
     # parser.add_argument('--csv_filename', default='wuhan_comp.csv', type=str)## no class
 
     parser.add_argument('--batch_size', default=4, type=int, help='batch size')
@@ -353,7 +354,7 @@ if __name__ == '__main__':
     # parser.add_argument('--premodel', default='city_wise_png_mhmtda_class_wuhan_2_adaptiveloss_1221', type=str)# wuhan class
     # parser.add_argument('--premodel', default='city_wise_png_mhmtda_class_wuhan_14_adaptiveloss_1220_init', type=str)# wuhan init class
     # parser.add_argument('--premodel', default='city_wise_png_mhmtda_noclass_wuhan_7_adaptiveloss_1221', type=str)# wuhan noclass
-    parser.add_argument('--premodel', default='./MTDA_weights/Stage2_step2_city_wise_png_jilin_1.pt', type=str)# wuhan class
+    parser.add_argument('--premodel', default='./MTDA_weights/saved_nosimilar/Stage2_step2_city_wise_png_jilin_1_nosimilar copy 4.pt', type=str)# wuhan class
 
 
 
@@ -390,6 +391,6 @@ if __name__ == '__main__':
     # plot_umap(features, labels, domain_labels, args.target_names, output_file='umap_projection_wuhan_ours_1226_domain.png',output_file2='umap_projection_wuhan_ours_1226_classes.png')
 
 
-    test_loss, test_acc = test(all_loader['test'],model)
+    test_loss, test_acc = test(all_loader['test'], model)
     
 

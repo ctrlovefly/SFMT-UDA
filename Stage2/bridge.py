@@ -233,7 +233,7 @@ if __name__ == "__main__":
 
         args.name = names[args.s].upper() + names[args.t].upper() #修改
 
-        args.output_dir_src = osp.join(args.output, 'STDA', args.dset, args.name.upper()) #預訓練模型
+        args.output_dir_src = osp.join(args.output, 'STDA', args.dset+'_nosimilar', args.name.upper()) #預訓練模型
 
         args.s_dset_path = folder + args.dset + '/' + names[args.s] + '_list.txt' #數據
         args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'
@@ -255,7 +255,7 @@ if __name__ == "__main__":
         dict = {'Domain': args.t, 'Image Path': img_path, 'Actual Label': label, 'Pseudo Label': logits_str} # 目标domain的都存储在args.s名字的csv当中了
 
         df = pd.DataFrame(dict)
-        df.to_csv(osp.join(args.save_dir, names[args.s]+'.csv'), mode = 'a', header=False, index=False)
+        df.to_csv(osp.join(args.save_dir, names[args.s]+'_nosimilar.csv'), mode = 'a', header=False, index=False)
         # df.to_csv(osp.join(args.save_dir, names[args.s]+'.csv'), mode = 'a', header=False, index=False)
 
 

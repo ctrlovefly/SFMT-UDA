@@ -6,7 +6,7 @@
 
 # self-training
 
-CUDA_VISIBLE_DEVICES=1 python -u MH_MTDA_self_training.py --pseudo_update_interval 2 --epoch 2 
+CUDA_VISIBLE_DEVICES=0 python -u MH_MTDA_self_training.py --pseudo_update_interval 2 --epoch 2 --isst
 
 
 

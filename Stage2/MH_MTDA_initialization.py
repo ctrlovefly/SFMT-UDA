@@ -332,7 +332,7 @@ def test(epoch, testloader, model):
             early_stop=0
             best_test_loss = avg_test_loss
             flag_bst=True
-            torch.save(model.state_dict(), f'./MTDA_weights/Stage2_step1_{args.dset}_{epoch}.pt')
+            torch.save(model.state_dict(), f'./MTDA_weights/Stage2_step1_{args.dset}_{epoch}_nosimilar.pt')
             print(f'Saving best model with loss: {best_test_loss:.2f}')
         else:
             early_stop=early_stop+1
@@ -437,14 +437,14 @@ def linear_decay_confidence_threshold(epoch, initial_threshold, min_threshold=0.
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Stage2Step1')
     parser.add_argument('--gpu_id', type=str, nargs='?', default='0', help="device id to run")
-    parser.add_argument('--lr', default=1e-3, type=float, help='learning rate')
+    parser.add_argument('--lr', default=1e-4, type=float, help='learning rate')
     parser.add_argument('--net', default="resnet18", type=str, help='model type (default: ResNet18)')
     parser.add_argument('--worker', type=int, default=8, help="number of workers")
     parser.add_argument('--seed', default=2025, type=int, help='random seed')
     parser.add_argument('--batch_size', default=4, type=int, help='batch size')
     parser.add_argument('--epoch', default=4, type=int, help='total epochs to run')
     parser.add_argument('--interval', default=1, type=int)
-    parser.add_argument('--csv_filename', default='guangzhou_source.csv', type=str, choices=['guangzhou_comp.csv', 'wuhan.csv', 'wuhan_comp.csv','changsha.csv','guangzhou_source.csv']) # class
+    parser.add_argument('--csv_filename', default='guangzhou_source_nosimilar.csv', type=str, choices=['guangzhou_comp.csv', 'wuhan.csv', 'wuhan_comp.csv','changsha.csv','guangzhou_source.csv','guangzhou_source_nosimilar.csv']) # class
     parser.add_argument('--txt_folder', default='csv_pseudo_labels', type=str)
     parser.add_argument('--dset', type=str, default='city_wise_png_jilin', choices=['city_wise_png', 'city_wise_png_jilin'])
     parser.add_argument("--ratio", default=1, type=float)

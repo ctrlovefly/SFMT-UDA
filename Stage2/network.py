@@ -7,14 +7,14 @@ from torch.autograd import Variable
 import math
 import torch.nn.utils.weight_norm as weightNorm
 from collections import OrderedDict
-from TransUNet.networks.vit_seg_modeling import VisionTransformer as ViT_seg
-from TransUNet.networks.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
+# from TransUNet.networks.vit_seg_modeling import VisionTransformer as ViT_seg
+# from TransUNet.networks.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
 from non_local_embedded_gaussian import NONLocalBlock2D
 import matplotlib.pyplot as plt
 import os
 import random
 # from test_model import CrossNorm_list
- 
+os.environ['TORCH_HOME'] = './pypth'
 def calc_ins_mean_std(x, eps=1e-5):
     """extract feature map statistics"""
     # eps is a small value added to the variance to avoid divide-by-zero.
