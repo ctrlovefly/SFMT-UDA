@@ -10,6 +10,7 @@ import argparse
 from torch.utils.data import DataLoader, Dataset
 from PIL import Image
 from tqdm import tqdm
+import network
 
 # 1. 读取遥感影像
 def read_tif(tif_path):
@@ -51,7 +52,7 @@ def sliding_window_cut(image, window_size=(640, 640), stride=200):
             # print("******")
             patches.append(patch)
             # print(patch.shape)
-            print((i,j))
+            # print((i,j))
             locations.append((i, j))
 
     return patches, locations
@@ -152,12 +153,44 @@ def classify_patches(patches, model, device):
     #     predictions.extend(predicted_class)
     return predictions
 
+def classify_patches_CoNMix(patches, model_list):
+    # print('Started testing on ', len(dsets), ' images')
+    dataset = PatchDataset(patches, transform=image_train())
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=False)
+
+    netF = model_list[0]
+    netB = model_list[1]
+    netC = model_list[2]
+
+    netF.eval()
+    netB.eval()
+    netC.eval()
+
+    all_predictions = []
+    
+    with torch.no_grad():
+        print('Started Testing')
+        iter_test = iter(dataloader)
+        for _ in tqdm(range(len(dataloader))):
+            data = next(iter_test)
+            inputs = data.to('cuda')
+            
+            outputs = netC(netB(netF(inputs)))
+            
+            _, predicted = torch.max(outputs.data, 1)
+
+            all_predictions.append(predicted.cpu())
+
+    all_predictions = torch.cat(all_predictions, dim=0).numpy()
+    
+    return all_predictions
+
 # 5. 拼接分类结果
 def reassemble_classification(predictions, locations, width, height, window_size=(640, 640), stride=200):
     classified_image = np.zeros((height, width), dtype=np.uint8)
     count_matrix = np.zeros((height, width), dtype=int)
-    print(len(predictions))
-    print(len(locations))
+    # print(len(predictions))
+    # print(len(locations))
     height, width = window_size[0], window_size[1]
     start_i = height // 2 - stride // 2
     start_j =  width // 2 - stride // 2
@@ -182,21 +215,27 @@ def main():
     parser.add_argument('--premodel', default='./MTDA_weights/Stage2_step2_city_wise_png_jilin_1.pt', type=str)
     parser.add_argument('--net', default="resnet18", type=str, help='model type (default: ResNet18)')
     parser.add_argument('--method', default="SFMT-UDA", type=str, help='classification method (default: SFMT-UDA)')
+    parser.add_argument('--outpath', default='classified_output_SFMT-UDA_cs.tif', type=str)
+
 
 
 
 
     args = parser.parse_args()
-    tif_path = '/media/lscsc/nas/qianqian/kexin_label/image/Extract_tif11.tif'
+    # tif_path = '/media/lscsc/nas/qianqian/kexin_label/image/Extract_tif11.tif'
+    # tif_path = '/media/lscsc/nas/qianqian/kexin_label/image/clear_rgb.tif'
+    tif_path = '/media/lscsc/nas/qianqian/kexin_label/image/clear_1_1_p.tif'
+
+
     # model_path = './MTDA_weights/Stage2_step2_city_wise_png_jilin_1.pt'
-    output_path = 'classified_output.tif'
+    output_path = args.outpath
     
     # 1. 读取影像
     image, transform, width, height = read_tif(tif_path)
     
     # 2. 滑动窗口切割影像
     patches, locations = sliding_window_cut(image)
-    print(locations)
+    # print(locations)
     # print(len(patches)) #80940
     # print(patches[0].shape)#(3, 640, 640)
     
@@ -211,15 +250,54 @@ def main():
     pretrain_model=args.premodel
     cls_method=args.method
 
-    # if cls_method == 'SFMT-UDA':
-    model = MultiHeadResNet50(args,num_heads=num_heads)
-    checkpoint = torch.load(f'{pretrain_model}')
-    model.load_state_dict(checkpoint)  # 将权重加载到模型中
+    if cls_method == 'SFMT-UDA':
+        model = MultiHeadResNet50(args, num_heads = num_heads)
+        checkpoint = torch.load(f'{pretrain_model}')
+        model.load_state_dict(checkpoint)  # 将权重加载到模型中
+        # 4. 对每个patch进行分类
+        predictions = classify_patches(patches, model, device)
+    elif cls_method == 'CoNMix':
+        modelpathF = '/media/lscsc/nas/qianqian/UDA/multitarget/CoNMix/MTDA_weights/city_wise_png_jilin/guangzhou_source/target_F.pt'
+        modelpathB = '/media/lscsc/nas/qianqian/UDA/multitarget/CoNMix/MTDA_weights/city_wise_png_jilin/guangzhou_source/target_B.pt'
+        modelpathC = '/media/lscsc/nas/qianqian/UDA/multitarget/CoNMix/MTDA_weights/city_wise_png_jilin/guangzhou_source/target_C.pt'
 
-    # model = load_model(model_path)
+        netF = network.ResBase(res_name='resnet50').cuda()
+        netB = network.feat_bootleneck(type='bn', feature_dim=netF.in_features,bottleneck_dim=256).cuda()
+        netC = network.feat_classifier(type='wn', class_num=args.class_num, bottleneck_dim=256).cuda()
+        netF.load_state_dict(torch.load(modelpathF))
+        netB.load_state_dict(torch.load(modelpathB))
+        netC.load_state_dict(torch.load(modelpathC))
+        model_list = [netF, netB, netC]
+        predictions = classify_patches_CoNMix(patches, model_list)
+    elif cls_method == 'aggregation':
+        modelpathF = '/media/lscsc/nas/qianqian/UDA/semisupervised/SHOT-plus/code/uda/ckps/target/uda/city_wise_png_jilin_combined_gz_source/GUANGZHOU_SOURCECHANGSHA/target_F_par_0.3_ssl_0.6.pt'
+        modelpathB = '/media/lscsc/nas/qianqian/UDA/semisupervised/SHOT-plus/code/uda/ckps/target/uda/city_wise_png_jilin_combined_gz_source/GUANGZHOU_SOURCECHANGSHA/target_B_par_0.3_ssl_0.6.pt'
+        modelpathC = '/media/lscsc/nas/qianqian/UDA/semisupervised/SHOT-plus/code/uda/ckps/target/uda/city_wise_png_jilin_combined_gz_source/GUANGZHOU_SOURCECHANGSHA/target_C_par_0.3_ssl_0.6.pt'
+
+        netF = network.ResBase(res_name='resnet50').cuda()
+        netB = network.feat_bootleneck(type='bn', feature_dim=netF.in_features,bottleneck_dim=256).cuda()
+        netC = network.feat_classifier(type='wn', class_num=args.class_num, bottleneck_dim=256).cuda()
+        netF.load_state_dict(torch.load(modelpathF))
+        netB.load_state_dict(torch.load(modelpathB))
+        netC.load_state_dict(torch.load(modelpathC))
+        model_list = [netF, netB, netC]
+        predictions = classify_patches_CoNMix(patches, model_list)
+    elif cls_method == 'source-only':
+        modelpathF = '/media/lscsc/nas/qianqian/UDA/SFMTDA/Stage1/code/uda/ckps/source/uda/city_wise_png_jilin/GUANGZHOU_SOURCE/source_F.pt'
+        modelpathB = '/media/lscsc/nas/qianqian/UDA/SFMTDA/Stage1/code/uda/ckps/source/uda/city_wise_png_jilin/GUANGZHOU_SOURCE/source_B.pt'
+        modelpathC = '/media/lscsc/nas/qianqian/UDA/SFMTDA/Stage1/code/uda/ckps/source/uda/city_wise_png_jilin/GUANGZHOU_SOURCE/source_C.pt'
+
+        netF = network.ResBase(res_name='resnet50').cuda()
+        netB = network.feat_bootleneck(type='bn', feature_dim=netF.in_features,bottleneck_dim=256).cuda()
+        netC = network.feat_classifier(type='wn', class_num=args.class_num, bottleneck_dim=256).cuda()
+        netF.load_state_dict(torch.load(modelpathF))
+        netB.load_state_dict(torch.load(modelpathB))
+        netC.load_state_dict(torch.load(modelpathC))
+        model_list = [netF, netB, netC]
+        predictions = classify_patches_CoNMix(patches, model_list)
+
     
-    # 4. 对每个patch进行分类
-    predictions = classify_patches(patches, model, device)
+
     
     # 5. 拼接分类结果
     classified_image = reassemble_classification(predictions, locations, width, height)
