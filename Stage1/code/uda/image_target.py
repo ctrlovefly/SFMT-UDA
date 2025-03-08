@@ -630,7 +630,7 @@ def obtain_label(loader, netF, netB, netC, args):
     K = all_output.size(1)
     aff = all_output.float().cpu().numpy()
     # flag=0
-    for _ in range(2):#centroid 好怪论文是softmax但是这里似乎是hard label？
+    for _ in range(2):
         initc = aff.transpose().dot(all_fea) # 加权
         initc = initc / (1e-8 + aff.sum(axis=0)[:,None]) # 除以加权和
         cls_count = np.eye(K)[predict].sum(axis=0) # 类别个数
@@ -639,13 +639,11 @@ def obtain_label(loader, netF, netB, netC, args):
 
         dd = cdist(all_fea, initc[labelset], args.distance) # 计算feautre 和 类别出现的feature中心的距离
         pred_label = dd.argmin(axis=1) # 获得最近的类别中心的索引
-        predict = labelset[pred_label]#获得新的predict pseudo label /将这些索引映射回 labelset 中实际的类别标签。
-        # aff_cp=torch.from_numpy(aff)
-        # if flag<2:        
+        predict = labelset[pred_label]# 将这些索引映射回 labelset 中实际的类别标签。
+    
         predict = refine_pseudo_label_with_relatedness(predict, all_output, similarity_matrix)
-        #     flag+=1
 
-        aff = np.eye(K)[predict] # 又是output了，这里的predict应该是softmax的？
+        aff = np.eye(K)[predict] #
 
     acc = calculate_weighted_accuracy(predict, all_label, similarity_matrix_16)
 
