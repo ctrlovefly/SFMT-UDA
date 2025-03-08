@@ -21,8 +21,6 @@ This repository hosts the code for the SFMT-UDA model which is a novel two-stage
     ```
     3. Copy the generated .txt files to `/SFMTDA/Stage1/code/data/{dataset_name}`.
 
-
-
 - For Stage 1
   1. Change the current directory to `SFMTDA/Stage1/code/uda`.
   2. Run the main script using:
@@ -54,7 +52,7 @@ This repository hosts the code for the SFMT-UDA model which is a novel two-stage
 
 ## VHRLCZ DATASET
 
-The VHRLCZ dataset consists of two components: Jilin-1 satellite imagery and Google Earth imagery. It is primarily designed for fine-grained LCZ classification and cross-city domain adaptation research. The dataset can be accessed via [Google Drive files](https://drive.google.com/file/d/1DpjqUAXr-At3qAoka6Xfdv7w1s0Jkn3c/view?usp=drive_link).  
+The VHRLCZ dataset consists of two components: Jilin-1 satellite imagery and Google Earth imagery. It is primarily designed for fine-grained LCZ classification and cross-city domain adaptation research. The dataset can be accessed via [Google Drive files]().  
 
 1. Google Earth Imagery: The Google Earth imagery in VHRLCZ is sourced from the LCZC-GES2 dataset (refer to [our previous work](https://ieeexplore.ieee.org/abstract/document/10556641)). We selected Google Earth RGB images from LCZC-GES2 that cover seven cities in southeastern China: Guangzhou, Hefei, Hong Kong, Nanchang, Nanjing, Shanghai, and Wuhan. In total, there are 18,936 image patches, each measuring 320 × 320 pixels with a spatial resolution of 1 meter.  
 
@@ -77,6 +75,14 @@ If you use this code in your research, please consider citing the following pape
 ```
 under review 
 ```
+
+## Acknowledgments  
+This project is inspired by and builds upon the work from:  
+
+- [SHOT-plus](https://github.com/tim-learn/SHOT-plus) 
+- [CoNMix](https://github.com/vcl-iisc/CoNMix)  
+
+We sincerely appreciate their contributions to this research area.
 
 ## Contact
 
