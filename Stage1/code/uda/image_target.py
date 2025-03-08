@@ -603,15 +603,20 @@ def obtain_label(loader, netF, netB, netC, args):
     [0,0.08,0.17,0.33,0.42,0.5,0.42,0.33,0.58,0.33,0.67,0.75,0.83,0.92,0.75,1,0.92],
     [0,0.08,0.17,0.33,0.42,0.5,0.42,0.33,0.58,0.33,0.67,0.75,0.83,0.92,0.75,0.92,1]])
 
-    indices_to_remove = args.remove_indices
-    similarity_matrix_16 = np.delete(similarity_matrix, indices_to_remove, axis=0)  # 删除行
-    similarity_matrix_16 = np.delete(similarity_matrix_16, indices_to_remove, axis=1)  # 删除列
+    if args.dset == 'city_wise_png':
+        similarity_matrix_16 = np.delete(np.delete(similarity_matrix, 6, axis=0), 6, axis=1)
+        similarity_matrix = keep_diagonal_near_elements(similarity_matrix, 3)
+        similarity_matrix = np.delete(np.delete(similarity_matrix, 6, axis=0), 6, axis=1)
+    elif args.dset == 'city_wise_png_jilin':
+        indices_to_remove = args.remove_indices
+        similarity_matrix_16 = np.delete(similarity_matrix, indices_to_remove, axis=0)  # 删除行
+        similarity_matrix_16 = np.delete(similarity_matrix_16, indices_to_remove, axis=1)  # 删除列
     
     
-    similarity_matrix=keep_diagonal_near_elements(similarity_matrix, 3)    
-    indices_to_remove = args.remove_indices
-    similarity_matrix = np.delete(similarity_matrix, indices_to_remove, axis=0)  # 删除行
-    similarity_matrix = np.delete(similarity_matrix, indices_to_remove, axis=1)  # 删除列
+        similarity_matrix=keep_diagonal_near_elements(similarity_matrix, 3)    
+        indices_to_remove = args.remove_indices
+        similarity_matrix = np.delete(similarity_matrix, indices_to_remove, axis=0)  # 删除行
+        similarity_matrix = np.delete(similarity_matrix, indices_to_remove, axis=1)  # 删除列
 
 
     # accuracy = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(all_label.size()[0])#初始的准确率
@@ -761,12 +766,8 @@ if __name__ == "__main__":
     parser.add_argument('--list_folder', type=str, default='../data/')
     parser.add_argument('--data_folder', type=str, default='../../../../../dataset/city_wise_png_ext_jilin')
 
-    # parser.add_argument('--indices_to_remove', type=str, default='../../../../../dataset/city_wise_png_ext_jilin')
     parser.add_argument('--remove_indices', type=int, nargs='+', default=[6, 15], help="indices to remove from the lcz matrix")
 
-
-
-    
     args = parser.parse_args()
 
     if args.dset == 'city_wise_png':

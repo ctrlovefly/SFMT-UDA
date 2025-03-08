@@ -40,13 +40,13 @@ def op_copy(optimizer):
     return optimizer
 
 class ImageListWithLogits_SingleDomain(Dataset):
-    def __init__(self, csv_file, target_id, transform=None):
+    def __init__(self, csv_file, target_id, root_path, transform=None):
         self.data = pd.read_csv(csv_file,header=None)
         self.data = self.data[self.data.iloc[:, 0] == target_id]
         self.data['absolute_idx'] = self.data.index
         self.data = self.data.reset_index(drop=True)
         self.transform = transform
-        self.root_path='../../../dataset/city_wise_png_ext_jilin'
+        self.root_path=root_path
     
     def __len__(self):
         return len(self.data)
@@ -130,7 +130,7 @@ def data_load(args):
     print("Loading data from: ", csv_file)
 
     for i in range(len(args.target_names)):
-        target_train = ImageListWithLogits_SingleDomain(csv_file, i+1, transform=image_train()) # 实例化dataset
+        target_train = ImageListWithLogits_SingleDomain(csv_file, i+1,args.data_folder, transform=image_train()) # 实例化dataset
 
         target_train_list['train'].append(target_train)
         target_train_list['test'].append(target_train)
@@ -162,7 +162,7 @@ def train(args, all_loader, model, optimizer, temperature, epoch):
     total = 0 
     pseudo_correct =0    
 
-    num_iters=300
+    num_iters=100
     for k in  range(num_iters):
         data_target_list=[]
         total_loss = 0
@@ -332,7 +332,7 @@ def test(epoch, testloader, model):
             early_stop=0
             best_test_loss = avg_test_loss
             flag_bst=True
-            torch.save(model.state_dict(), f'./MTDA_weights/Stage2_step1_{args.dset}_{epoch}_nosimilar.pt')
+            torch.save(model.state_dict(), f'./MTDA_weights/Stage2_step1_{args.dset}_{epoch}_sub.pt')
             print(f'Saving best model with loss: {best_test_loss:.2f}')
         else:
             early_stop=early_stop+1
@@ -444,12 +444,16 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', default=4, type=int, help='batch size')
     parser.add_argument('--epoch', default=4, type=int, help='total epochs to run')
     parser.add_argument('--interval', default=1, type=int)
-    parser.add_argument('--csv_filename', default='guangzhou_source_nosimilar.csv', type=str, choices=['guangzhou_comp.csv', 'wuhan.csv', 'wuhan_comp.csv','changsha.csv','guangzhou_source.csv','guangzhou_source_nosimilar.csv']) # class
+    parser.add_argument('--csv_filename', default='guangzhou_source_nosimilar.csv', type=str, choices=['guangzhou_comp.csv', 'wuhan.csv', 'wuhan_comp.csv','changsha.csv','guangzhou_source.csv','guangzhou_source_nosimilar.csv','guangzhou_Google.csv','guangzhou_Google_sub.csv']) # class
     parser.add_argument('--txt_folder', default='csv_pseudo_labels', type=str)
     parser.add_argument('--dset', type=str, default='city_wise_png_jilin', choices=['city_wise_png', 'city_wise_png_jilin'])
     parser.add_argument("--ratio", default=1, type=float)
     parser.add_argument("--pseudo_update_interval", default=2, type=int)
     parser.add_argument('--isst', action='store_true', help='use standard augmentation (default: False)')
+    parser.add_argument('--data_folder', type=str, default='../../../dataset/city_wise_png_ext_jilin')
+    parser.add_argument("--class_num", default=15, type=int)
+
+
 
     args = parser.parse_args()
 
@@ -457,7 +461,6 @@ if __name__ == '__main__':
     args.classifier="bn"
     args.bottleneck=256
     args.layer="wn"
-    args.class_num=15
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
     if args.seed != 0:
         torch.manual_seed(args.seed)
@@ -496,7 +499,7 @@ if __name__ == '__main__':
     param_group = []
     # 对每个部分的参数进行分类，设置不同的学习率
     for k, v in model.backbone.named_parameters():  # 假设 backbone 是 netF
-        param_group += [{'params': v, 'lr': args.lr }]  # netF 的学习率设置为 args.lr * 0.1
+        param_group += [{'params': v, 'lr': args.lr * 0.4}]  # netF 的学习率设置为 args.lr * 0.1
     
     head_iter = 0
     for head in model.heads:

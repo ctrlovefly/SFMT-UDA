@@ -8,8 +8,20 @@ This repository hosts the code for the SFMT-UDA model which is a novel two-stage
 - python 3.9
 - pytorch 2.3.1+cu121   
 - torchvision 0.18.1 
+- others:opencv-python, tqdm, scipy, sklearn, matplotlib, seaborn
 
 ### Train and test
+- Prepare dataset
+  - Download [VHRLCZ]()
+  - Samples in VHRLCZ are organized in the ImageNet format (The data is stored in a root directory, with each category having a separate folder). We first generate some .txt files containing paths and labels using /SFMTDA/Stage1/Generate_list/readfile_LCZ.py.
+    1. Replace the folder path in `readfile_LCZ.py` with the path where you placed the dataset.
+    2. then run the script: 
+    ```Bash
+    python readfile_LCZ.py
+    ```
+    3. Copy the generated .txt files to `/SFMTDA/Stage1/code/data/{dataset_name}`.
+
+
 
 - For Stage 1
   1. Change the current directory to `SFMTDA/Stage1/code/uda`.
@@ -20,14 +32,16 @@ This repository hosts the code for the SFMT-UDA model which is a novel two-stage
     ```
 
 - For Stage 2, 
-  1. Prepare pseudo labels for Stage 2
-    1. Copy `./ckps/target/uda/city_wise_png_jilin` to the `./SFMTDA/Stage2/STDA_weights/STDA` folder
-    2. Change the current directory to `./SFMTDA/Stage2`
-    3. Run the script:
-      ```Bash
-      sh ./brige.sh
-      ```
-  2. Run the main script using: 
+  - Prepare pseudo labels for Stage 2
+    1. Copy `./ckps/target/uda/{dataset_name}` to the `/SFMTDA/Stage2/STDA_weights/STDA` folder
+    2. Change the current directory to `/SFMTDA/Stage2`
+    3. Run the script:  
+    ```Bash
+    sh ./brige.sh
+    ```   
+    4. The generated `.csv` is in `./csv_pseudo_labels`
+
+  - Run the main script using: 
     ```Bash
     sh ./MH_MTDA.sh
     ```

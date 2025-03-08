@@ -10,7 +10,7 @@ class MultiHeadResNet50(nn.Module):
         super(MultiHeadResNet50, self).__init__()
 
         # Initialize the backbone (netF)
-        self.backbone = network.ResBase(res_name=args.net).cuda()
+        self.backbone = network.ResBase(res_name=args.net, num_target=len(args.target_names)).cuda()
 
         # Initialize multiple heads (bottleneck + classifier)
         self.heads = nn.ModuleList()
