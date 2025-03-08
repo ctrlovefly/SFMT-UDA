@@ -20,17 +20,6 @@ def read_tif(tif_path):
         width, height = src.width, src.height
     return image, transform, width, height
 
-# 2. 滑动窗口切割影像
-# def sliding_window_cut(image, window_size=(640, 640), stride=200):
-#     patches = []
-#     locations = []
-#     for i in range(0, image.shape[1] - window_size[1], stride):
-#         for j in range(0, image.shape[2] - window_size[0], stride):
-#             patch = image[:, i:i+window_size[1], j:j+window_size[0]]
-#             patches.append(patch)
-#             # print((i, j))
-#             locations.append((i, j))
-#     return patches, locations
 def sliding_window_cut(image, window_size=(640, 640), stride=200):
     patches = []
     locations = []
@@ -89,38 +78,6 @@ class PatchDataset(Dataset):
             patch = self.transform(patch)
         return patch
 
-       
-# def data_load(args):
-#     # def image_train(resize_size=256, crop_size=224, alexnet=False):
-#     #     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#     #                                      std=[0.229, 0.224, 0.225])
-#     #     return transforms.Compose([
-
-#     #         transforms.Resize((crop_size, crop_size)),
-#     #         transforms.ToTensor(),
-#     #         normalize
-#     #     ])
-
-#     def image_train(resize_size=256, crop_size=224, alexnet=False):
-#         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#                                         std=[0.229, 0.224, 0.225])
-#         return transforms.Compose([
-#             transforms.Resize((resize_size, resize_size)),
-#             transforms.CenterCrop(crop_size),
-#             transforms.ToTensor(),
-#             normalize
-#         ])
-#     target_train_loader_list = {}
-#     target_train_loader_list['test'] = []
-#     target_train_list= []
-#     csv_file = f'{args.txt_folder}/{args.dset}/{args.csv_filename}'  # CSV 文件路径
-#     print("Loading data from: ", csv_file)
-#     for i in range(len(args.target_names)):
-#         target_train = ImageListWithLogits_SingleDomain(csv_file, i+1, transform=image_train()) # 实例化dataset
-#         target_train_list.append(target_train)
-#         target_train_loader_list['test'].append(DataLoader(target_train_list[i], batch_size=args.batch_size, shuffle=True, num_workers=args.worker, drop_last=False))
-#     return target_train_loader_list, target_train_list
-# 4. 分类每个patch
 def classify_patches(patches, model, device):
     dataset = PatchDataset(patches, transform=image_train())
     dataloader = DataLoader(dataset, batch_size=64, shuffle=False)
@@ -143,14 +100,6 @@ def classify_patches(patches, model, device):
             predicted_class = logits.argmax(dim=1).cpu().numpy()  # 选择得分最大的类别
             predictions.extend(predicted_class)  # 存储预测结果
     
-    # for batch in tqdm(dataloader, desc="Processing batches", unit="batch"):
-    #     # print(type(batch))
-    #     batch = batch.to(device)
-    #     with torch.no_grad():
-    #         outputs = model(batch,[0])
-    #     logits = torch.cat(outputs, dim=0)  # 拼接所有 logits
-    #     predicted_class = logits.argmax(dim=1).cpu().numpy()  # 选择得分最大的类别
-    #     predictions.extend(predicted_class)
     return predictions
 
 def classify_patches_CoNMix(patches, model_list):
@@ -188,14 +137,9 @@ def classify_patches_CoNMix(patches, model_list):
 # 5. 拼接分类结果
 def reassemble_classification(predictions, locations, width, height, window_size=(640, 640), stride=200):
     classified_image = np.zeros((height, width), dtype=np.uint8)
-    count_matrix = np.zeros((height, width), dtype=int)
-    # print(len(predictions))
-    # print(len(locations))
+
     height, width = window_size[0], window_size[1]
-    start_i = height // 2 - stride // 2
-    start_j =  width // 2 - stride // 2
-    # end_i = image.shape[1] - (height // 2 + stride // 2)
-    # end_j = image.shape[2] - (width // 2 + stride // 2)
+
     for pred, (i, j) in zip(predictions, locations):
         # print((i, j))
         classified_image[i:i+stride, j:j+stride] = pred
@@ -217,17 +161,8 @@ def main():
     parser.add_argument('--method', default="SFMT-UDA", type=str, help='classification method (default: SFMT-UDA)')
     parser.add_argument('--outpath', default='classified_output_SFMT-UDA_cs.tif', type=str)
 
-
-
-
-
     args = parser.parse_args()
-    # tif_path = '/media/lscsc/nas/qianqian/kexin_label/image/Extract_tif11.tif'
-    # tif_path = '/media/lscsc/nas/qianqian/kexin_label/image/clear_rgb.tif'
-    tif_path = '/media/lscsc/nas/qianqian/kexin_label/image/clear_1_1_p.tif'
-
-
-    # model_path = './MTDA_weights/Stage2_step2_city_wise_png_jilin_1.pt'
+    tif_path = '/media/lscsc/nas/qianqian/kexin_label/image/clear_rgb.tif'
     output_path = args.outpath
     
     # 1. 读取影像

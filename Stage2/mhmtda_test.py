@@ -16,9 +16,6 @@ from matplotlib import cm  # 用于获取颜色映射
 from matplotlib.lines import Line2D
 import os
 np.random.seed(4)
-# os.environ["OMP_NUM_THREADS"] = "1"  # OpenMP
-# os.environ["MKL_NUM_THREADS"] = "1"  # MKL
-
 
 def test(testloader, model):
     # global best_acc
@@ -331,39 +328,10 @@ if __name__ == '__main__':
     parser.add_argument('--outpath', default='confusion_matrix', type=str)
     parser.add_argument('--txt_folder', default='csv_pseudo_labels', type=str)
     parser.add_argument('--dset', type=str, default='city_wise_png_jilin', choices=['city_wise_png', 'city_wise_png_jilin'])
-    # parser.add_argument('--csv_filename', default='guangzhou_comp.csv', type=str) # class
-    # parser.add_argument('--csv_filename', default='guangzhou.csv', type=str) # no class
-
-    parser.add_argument('--csv_filename', default='guangzhou_source_nosimilar.csv', type=str)# # class
-    # parser.add_argument('--csv_filename', default='wuhan_comp.csv', type=str)## no class
-
+    parser.add_argument('--csv_filename', default='guangzhou_source.csv', type=str)# # class
     parser.add_argument('--batch_size', default=4, type=int, help='batch size')
     parser.add_argument('--worker', type=int, default=8, help="number of workers")
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_noclass_wuhan_best_model_epoch_14', type=str)
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_class_guang_best_model_epoch_1_ceshi', type=str) # guangzhou class
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_noclass_guangzhou_3_adaptiveloss_1218', type=str) # guangzhou noclass
-
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_class_wuhan_14_adaptiveloss', type=str)
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_noclass_wuhan_14_adaptiveloss', type=str)
-
-    # parser.add_argument('--premodel', default='city_wise_png_initial_class_guang_best_model_epoch_14', type=str)# guangzhou init class
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_class_wuhan_best_model_epoch_14_1216', type=str)# wuhan init class
-
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_noclass_wuhan_0_adaptiveloss_1218', type=str)# wuhan no class
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_class_wuhan_2_adaptiveloss_1218', type=str)# wuhan class
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_class_wuhan_2_adaptiveloss_1221', type=str)# wuhan class
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_class_wuhan_14_adaptiveloss_1220_init', type=str)# wuhan init class
-    # parser.add_argument('--premodel', default='city_wise_png_mhmtda_noclass_wuhan_7_adaptiveloss_1221', type=str)# wuhan noclass
-    parser.add_argument('--premodel', default='./MTDA_weights/saved_nosimilar/Stage2_step2_city_wise_png_jilin_1_nosimilar copy 4.pt', type=str)# wuhan class
-
-
-
-
-
-
-
-
-    
+    parser.add_argument('--premodel', default='./MTDA_weights/Stage2_step2_city_wise_png_jilin_1.pt', type=str)# wuhan class
     parser.add_argument('--net', default="resnet18", type=str, help='model type (default: ResNet18)')
     
     args = parser.parse_args()
@@ -389,7 +357,6 @@ if __name__ == '__main__':
    
     # features, labels, domain_labels = extract_and_save_features(model, all_loader['test'])
     # plot_umap(features, labels, domain_labels, args.target_names, output_file='umap_projection_wuhan_ours_1226_domain.png',output_file2='umap_projection_wuhan_ours_1226_classes.png')
-
 
     test_loss, test_acc = test(all_loader['test'], model)
     
