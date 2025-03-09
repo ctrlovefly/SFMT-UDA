@@ -12,7 +12,7 @@ This repository hosts the code for the SFMT-UDA model which is a novel two-stage
 
 ### Train and test
 - Prepare dataset
-  - Download [VHRLCZ]()
+  - Download [VHRLCZ](https://drive.google.com/file/d/1Mdd2cThAvi7U_L7NUrFJyq-lTpO8Dij8/view?usp=sharing)
   - Samples in VHRLCZ are organized in the ImageNet format (The data is stored in a root directory, with each category having a separate folder). We first generate some .txt files containing paths and labels using /SFMTDA/Stage1/Generate_list/readfile_LCZ.py.
     1. Replace the folder path in `readfile_LCZ.py` with the path where you placed the dataset.
     2. then run the script: 
@@ -52,7 +52,7 @@ This repository hosts the code for the SFMT-UDA model which is a novel two-stage
 
 ## VHRLCZ DATASET
 
-The VHRLCZ dataset consists of two components: Jilin-1 satellite imagery and Google Earth imagery. It is primarily designed for fine-grained LCZ classification and cross-city domain adaptation research. The dataset can be accessed via [Google Drive files]().  
+The VHRLCZ dataset consists of two components: Jilin-1 satellite imagery and Google Earth imagery. It is primarily designed for fine-grained LCZ classification and cross-city domain adaptation research. The dataset can be accessed via [Google Drive files](https://drive.google.com/file/d/1Mdd2cThAvi7U_L7NUrFJyq-lTpO8Dij8/view?usp=sharing).  
 
 1. Google Earth Imagery: The Google Earth imagery in VHRLCZ is sourced from the LCZC-GES2 dataset (refer to [our previous work](https://ieeexplore.ieee.org/abstract/document/10556641)). We selected Google Earth RGB images from LCZC-GES2 that cover seven cities in southeastern China: Guangzhou, Hefei, Hong Kong, Nanchang, Nanjing, Shanghai, and Wuhan. In total, there are 18,936 image patches, each measuring 320 × 320 pixels with a spatial resolution of 1 meter.  
 
